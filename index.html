@@ -1,7 +1,164 @@
-<h1>in service</h1>
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live TV Service</title>
 <style>
   body {
-    background-color: white;
+    background: #000;
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    color: #fff;
+    overflow: hidden;
+  }
+  video, img {
+    width: 100%;
+    height: calc(100vh - 100px);
+    object-fit: contain;
+    background: #000;
+  }
+  .overlay {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.85);
+    padding: 10px 20px;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+  }
+  .section {
+    display: flex;
+    flex-direction: column;
+  }
+  .title {
+    font-weight: 600;
+    font-size: 16px;
+    color: #4fc3f7;
+  }
+  .text {
+    color: #bbb;
+  }
+  #errorScreen {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #111;
+    color: #f44336;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3em;
+    font-weight: bold;
+    letter-spacing: 2px;
+    display: none;
   }
 </style>
+</head>
+<body>
+
+<video id="player" autoplay muted></video>
+<img id="ad" style="display:none;" />
+<div id="errorScreen">IN SERVICE</div>
+
+<div class="overlay">
+  <div class="section">
+    <div class="title" id="nowPlaying">Now Playing</div>
+    <div class="text" id="timeRemaining"></div>
+  </div>
+  <div class="section">
+    <div class="title">Up Next</div>
+    <div class="text" id="playingNext"></div>
+  </div>
+</div>
+
+<script>
+// CONFIGURATION
+const schedule = [
+  { type: 'show', name: 'Big Buck Bunny', url: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: 30 },
+  { type: 'ad', name: 'Ad 1', url: 'https://via.placeholder.com/800x450?text=Ad+1', duration: 10 },
+  { type: 'show', name: 'The Bear', url: 'https://www.w3schools.com/html/movie.mp4', duration: 30 },
+  { type: 'ad', name: 'Ad 2', url: 'https://via.placeholder.com/800x450?text=Ad+2', duration: 10 },
+];
+
+const player = document.getElementById('player');
+const ad = document.getElementById('ad');
+const errorScreen = document.getElementById('errorScreen');
+const nowPlayingEl = document.getElementById('nowPlaying');
+const playingNextEl = document.getElementById('playingNext');
+const timeRemainingEl = document.getElementById('timeRemaining');
+
+const totalDuration = schedule.reduce((acc, item) => acc + item.duration, 0);
+
+function getCurrentSchedule() {
+  const now = new Date();
+  const utcSeconds = Math.floor(now.getTime() / 1000);
+  const posInLoop = utcSeconds % totalDuration;
+
+  let time = 0;
+  for (let i = 0; i < schedule.length; i++) {
+    const item = schedule[i];
+    if (posInLoop < time + item.duration) {
+      const offset = posInLoop - time;
+      const timeLeft = item.duration - offset;
+      const nextItem = schedule[(i + 1) % schedule.length];
+      return { item, offset, timeLeft, nextItem };
+    }
+    time += item.duration;
+  }
+  return { item: schedule[0], offset: 0, timeLeft: schedule[0].duration, nextItem: schedule[1] };
+}
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function showError() {
+  errorScreen.style.display = 'flex';
+  player.style.display = 'none';
+  ad.style.display = 'none';
+}
+
+function playCurrent() {
+  const { item, offset, timeLeft, nextItem } = getCurrentSchedule();
+
+  nowPlayingEl.textContent = `${item.name}`;
+  playingNextEl.textContent = `${nextItem.name}`;
+  timeRemainingEl.textContent = `Time Remaining: ${formatTime(timeLeft)}`;
+
+  errorScreen.style.display = 'none';
+
+  if (item.type === 'show') {
+    ad.style.display = 'none';
+    player.style.display = 'block';
+    if (player.src !== item.url) {
+      player.src = item.url;
+      player.load();
+      player.onloadedmetadata = () => {
+        player.currentTime = offset;
+        player.play().catch(showError);
+      };
+      player.onerror = showError;
+    } else {
+      const drift = Math.abs(player.currentTime - offset);
+      if (drift > 1) player.currentTime = offset;
+    }
+  } else if (item.type === 'ad') {
+    player.style.display = 'none';
+    ad.style.display = 'block';
+    ad.src = item.url;
+    ad.onerror = showError;
+  }
+}
+
+setInterval(playCurrent, 1000);
+playCurrent();
+</script>
+
+</body>
+</html>
