@@ -14,8 +14,8 @@
   }
   video, img {
     width: 100%;
-    height: calc(100vh - 100px);
-    object-fit: contain;
+    height: 100vh;
+    object-fit: cover;
     background: #000;
   }
   .overlay {
@@ -23,13 +23,12 @@
     bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(0,0,0,0.85);
-    padding: 10px 20px;
+    background: rgba(0,0,0,0.75);
+    padding: 8px 16px;
     font-size: 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #fff;
   }
   .section {
     display: flex;
@@ -41,7 +40,7 @@
     color: #4fc3f7;
   }
   .text {
-    color: #bbb;
+    color: #ccc;
   }
   #errorScreen {
     position: fixed;
@@ -56,6 +55,53 @@
     letter-spacing: 2px;
     display: none;
   }
+  #upNextBanner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    font-size: 2em;
+    padding: 20px 40px;
+    border-radius: 8px;
+    display: none;
+  }
+  #guide {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    color: #fff;
+    display: none;
+    flex-direction: column;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  #guide h1 {
+    font-size: 2em;
+    margin-bottom: 10px;
+    color: #4fc3f7;
+  }
+  #guide ul {
+    list-style: none;
+    padding: 0;
+  }
+  #guide li {
+    margin-bottom: 5px;
+    font-size: 1.2em;
+  }
+  .guide-btn {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: #4fc3f7;
+    color: #000;
+    border: none;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 4px;
+  }
 </style>
 </head>
 <body>
@@ -63,6 +109,12 @@
 <video id="player" autoplay muted></video>
 <img id="ad" style="display:none;" />
 <div id="errorScreen">IN SERVICE</div>
+<div id="upNextBanner">Up Next: <span id="upNextName"></span></div>
+<div id="guide">
+  <h1>Guide</h1>
+  <ul id="guideList"></ul>
+</div>
+<button class="guide-btn" onclick="toggleGuide()">Guide</button>
 
 <div class="overlay">
   <div class="section">
@@ -79,7 +131,7 @@
 // CONFIGURATION
 const schedule = [
   { type: 'show', name: 'Big Buck Bunny', url: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: 30 },
-  { type: 'ad', name: 'Ad 1', url: 'https://via.placeholder.com/800x450?text=Ad+1', duration: 10 },
+  { type: 'ad', name: 'Ad 1', url: 'https://raw.githubusercontent.com/benaniagovernment/radeellive/refs/heads/main/Group%2038476977.png', duration: 10 },
   { type: 'show', name: 'The Bear', url: 'https://www.w3schools.com/html/movie.mp4', duration: 30 },
   { type: 'ad', name: 'Ad 2', url: 'https://via.placeholder.com/800x450?text=Ad+2', duration: 10 },
 ];
@@ -87,11 +139,22 @@ const schedule = [
 const player = document.getElementById('player');
 const ad = document.getElementById('ad');
 const errorScreen = document.getElementById('errorScreen');
+const upNextBanner = document.getElementById('upNextBanner');
+const upNextName = document.getElementById('upNextName');
 const nowPlayingEl = document.getElementById('nowPlaying');
 const playingNextEl = document.getElementById('playingNext');
 const timeRemainingEl = document.getElementById('timeRemaining');
+const guideEl = document.getElementById('guide');
+const guideList = document.getElementById('guideList');
 
 const totalDuration = schedule.reduce((acc, item) => acc + item.duration, 0);
+
+// populate guide
+schedule.forEach(item => {
+  const li = document.createElement('li');
+  li.textContent = `${item.name} (${item.type}, ${item.duration}s)`;
+  guideList.appendChild(li);
+});
 
 function getCurrentSchedule() {
   const now = new Date();
@@ -133,6 +196,13 @@ function playCurrent() {
 
   errorScreen.style.display = 'none';
 
+  if (timeLeft <= 5) {
+    upNextBanner.style.display = 'flex';
+    upNextName.textContent = nextItem.name;
+  } else {
+    upNextBanner.style.display = 'none';
+  }
+
   if (item.type === 'show') {
     ad.style.display = 'none';
     player.style.display = 'block';
@@ -155,6 +225,14 @@ function playCurrent() {
     ad.onerror = showError;
   }
 }
+
+function toggleGuide() {
+  guideEl.style.display = guideEl.style.display === 'flex' ? 'none' : 'flex';
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key.toLowerCase() === 'g') toggleGuide();
+});
 
 setInterval(playCurrent, 1000);
 playCurrent();
