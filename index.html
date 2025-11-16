@@ -12,12 +12,11 @@
     color: #fff;
     overflow: hidden;
   }
-  iframe, img {
+  video, img {
     width: 100%;
     height: 100vh;
     object-fit: cover;
     background: #000;
-    border: none;
   }
   .overlay {
     position: fixed;
@@ -103,24 +102,11 @@
     font-weight: bold;
     border-radius: 4px;
   }
-
-  banner {
-    background-color: red;
-    color: black;
-    margin-inline: -8px;
-    margin-top: -8px;
-  }
 </style>
 </head>
 <body>
 
-
-  
-<banner></banner>
-
-
-  
-<iframe id="player" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<video id="player" autoplay muted></video>
 <img id="ad" style="display:none;" />
 <div id="errorScreen">IN SERVICE</div>
 <div id="upNextBanner">Up Next: <span id="upNextName"></span></div>
@@ -144,9 +130,10 @@
 <script>
 // CONFIGURATION
 const schedule = [
-  { type: 'ad', name: 'brentendo swap', url: 'https://raw.githubusercontent.com/benaniagovernment/radeellive/refs/heads/main/Group%2038476983.png', duration: 15 },
-  { type: 'show', name: 'pingping bear', url: 'https://www.youtube.com/watch?v=vp40p5u1x34?autoplay=1&mute=0', duration: 48 },
-  { type: 'ad', name: 'roachpurse', url: 'https://www.youtube.com/watch?v=5XYmpbz9jI4?autoplay=1&mute-0', duration: 13}
+  { type: 'show', name: 'Big Buck Bunny', url: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: 30 },
+  { type: 'ad', name: 'Ad 1', url: 'https://raw.githubusercontent.com/benaniagovernment/radeellive/refs/heads/main/Group%2038476977.png', duration: 10 },
+  { type: 'show', name: 'The Bear', url: 'https://www.w3schools.com/html/movie.mp4', duration: 30 },
+  { type: 'ad', name: 'Ad 2', url: 'https://via.placeholder.com/800x450?text=Ad+2', duration: 10 },
 ];
 
 const player = document.getElementById('player');
@@ -221,6 +208,15 @@ function playCurrent() {
     player.style.display = 'block';
     if (player.src !== item.url) {
       player.src = item.url;
+      player.load();
+      player.onloadedmetadata = () => {
+        player.currentTime = offset;
+        player.play().catch(showError);
+      };
+      player.onerror = showError;
+    } else {
+      const drift = Math.abs(player.currentTime - offset);
+      if (drift > 1) player.currentTime = offset;
     }
   } else if (item.type === 'ad') {
     player.style.display = 'none';
